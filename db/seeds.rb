@@ -27,6 +27,7 @@ north_harbour = Team.create({
     tournament: 'Mitre 10 Cup',
     country: 'New Zealand',
 });
+north_harbour.team_alias.create({alias: 'North harbour'})
 
 counties_manukau = Team.create({
     name: 'Counties Manukau',
@@ -34,7 +35,7 @@ counties_manukau = Team.create({
     tournament: 'Mitre 10 Cup',
     country: 'New Zealand',
 });
-counties_manukau.team_alias.create({alias: 'Counties-Manukau'})
+counties_manukau.team_alias.create([{alias: 'Counties-Manukau'}, {alias: 'Counties Man'}])
 
 
 wellington = Team.create({

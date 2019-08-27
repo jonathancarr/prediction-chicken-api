@@ -4,49 +4,79 @@ class GatherResultsJob < ApplicationJob
   queue_as :default
 
   def perform(*args)
-    @week = 1
-    @year = 2019
-    scrape_thing
+    results_urls = [
+      { year: 2016, url: "http://www.mitre10cup.co.nz/Fixtures/Index/Mitre2016" },
+      { year: 2017, url: "http://www.mitre10cup.co.nz/Fixtures/Index/Mitre2017" },
+      { year: 2018, url: "http://www.mitre10cup.co.nz/Fixtures/Index/Mitre2018" },
+      { year: 2019, url: "http://www.mitre10cup.co.nz/Fixtures" },
+    ]
+    results = results_urls.map do |results| 
+      @year ||= results[:year]
+      @week ||= 1
+      scrape_results(results[:url])
+    end
   end
 
-  def scrape_thing()
-    doc = Nokogiri::HTML(open("http://www.mitre10cup.co.nz/Fixtures"))
-    doc.css("tbody tr").each.with_index do |row|
+  def scrape_results(url)
+    doc = Nokogiri::HTML(open(url))
+    fixtures = doc.css("tbody tr").map do |row|
       row_data = row.css("td").map {|cell| cell.text.strip}
-      puts parse_row(row_data)
+      parse_row(row_data)
+    end.select(&:present?)
+    set_playoff_weeks(fixtures)
+  end
+
+  def set_playoff_weeks(fixtures)
+    last_regular_week = fixtures.pluck(:week).select{ |week| week.is_a? Numeric}.max
+    fixtures.map do |fixture|
+      fixture[:week] = last_regular_week + 1 if fixture[:week] == :semifinals
+      fixture[:week] = last_regular_week + 2 if fixture[:week] == :finals
+      fixture
     end
-    "oh no"
   end
 
   def parse_row(row)
-    return if parse_week(row)
+    if row.count == 1
+      parse_week(row[0])
+      return nil
+    end
 
     parse_game(row)
   end
-
-  def parse_week(row)
-    if row[0] =~ /Week \d+/
-      @week = row[0] =~ /\d+/
+  
+  def parse_week(str)
+    if str =~ /semi/i
+      @week = :semifinals
+    elsif str =~ /final/i
+      @week = :finals
+    elsif str =~ /Week \d+/
+      week = str.match(/\d+/)[0].to_i
+      @week = week
     end
   end
 
   def parse_game(row)
-    datetime = parse_datetime(row[0], row[3])
-    teams = parse_teams(row[1])
-    venue = row[2]
-    score = parse_score(row[4])
-    {
-      week: @week,
-      home_team: teams[:home_team],
-      away_team: teams[:away_team],
-      kick_off_at: datetime,
-      venue: venue,
-      home_score: score[:home_score],
-      away_score: score[:away_score],
-    }
+    begin
+      datetime = parse_datetime(row[0], row[3])
+      teams = parse_teams(row[1])
+      venue = row[2]
+      score = parse_score(row[4])
+      {
+        week: @week,
+        home_team: teams[:home_team],
+        away_team: teams[:away_team],
+        kick_off_at: datetime,
+        venue: venue,
+        home_score: score[:home_score],
+        away_score: score[:away_score],
+      }
+    rescue Exception => e
+      puts "Cannot parse match: #{row.inspect}"
+    end
   end
 
   def parse_datetime(date, time)
+    puts "#{date} #{@year} #{time} NZT"
     DateTime.strptime("#{date} #{@year} #{time} NZT", "%d %b %Y %l:%M %p %Z")
   end
 
@@ -61,22 +91,28 @@ class GatherResultsJob < ApplicationJob
     team = Team.find_by(name: name)
     return team.id if team.present?
     
+    # Team spelling/punctuation can vary across years' results
     team_alias = TeamAlias.find_by(alias: name)
     return team_alias.team if team_alias.present?
 
-    puts "TEAM NOT FOUND: #{name}"
+    raise "Cannot find team: #{name}"
   end
 
   def strip_metadata(name)
-    index = name =~ / \(RS\)/
-    return name[0..index].strip if index
+    # Bracketed metadata can be appended to matches to show Ranfurly Shield challenges, etc.
+    index = name =~ / \(.*\)/
+    name = name[0..index].strip if index
+
+    # Games can be prefixed with playoffs information, eg "Final: Wellington v Auckland"
+    index = name =~ /:/
+    name = name[(index + 1)..-1].strip if index
 
     name
   end
 
   def parse_score(score)
     scores = score.split("-")
-    { home_score: scores[0], away_score: scores[1] }
+    { home_score: scores[0].to_i, away_score: scores[1].to_i }
   end
 end
  
