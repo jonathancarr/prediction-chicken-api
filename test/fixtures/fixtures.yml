@@ -1,0 +1,21 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  home_team: one
+  away_team: one
+  tournament: one
+  week: 1
+  kick_off_at: 2019-08-27 22:01:13
+  venue: MyString
+  home_score: 1
+  away_score: 1
+
+two:
+  home_team: two
+  away_team: two
+  tournament: two
+  week: 1
+  kick_off_at: 2019-08-27 22:01:13
+  venue: MyString
+  home_score: 1
+  away_score: 1

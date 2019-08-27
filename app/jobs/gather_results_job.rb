@@ -70,7 +70,6 @@ class GatherResultsJob < ApplicationJob
   end
 
   def parse_datetime(date, time)
-    puts "#{date} #{@year} #{time} NZT"
     DateTime.strptime("#{date} #{@year} #{time} NZT", "%d %b %Y %l:%M %p %Z")
   end
 
@@ -127,8 +126,6 @@ class GatherResultsJob < ApplicationJob
       )
       game.update_attributes(fixture)
       game.save
-      puts game.errors.inspect
-      puts fixture.inspect
     end
   end
 
