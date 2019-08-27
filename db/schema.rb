@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2019_08_27_061258) do
+ActiveRecord::Schema.define(version: 2019_08_27_093024) do
 
   create_table "team_aliases", force: :cascade do |t|
     t.integer "team_id"
@@ -23,8 +23,16 @@ ActiveRecord::Schema.define(version: 2019_08_27_061258) do
   create_table "teams", force: :cascade do |t|
     t.string "name"
     t.string "conference"
-    t.string "tournament"
     t.string "country"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "tournament_id"
+    t.index ["tournament_id"], name: "index_teams_on_tournament_id"
+  end
+
+  create_table "tournaments", force: :cascade do |t|
+    t.string "name"
+    t.string "short_name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
