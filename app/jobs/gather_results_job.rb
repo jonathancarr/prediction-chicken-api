@@ -13,7 +13,9 @@ class GatherResultsJob < ApplicationJob
     doc = Nokogiri::HTML(open("http://www.mitre10cup.co.nz/Fixtures"))
     doc.css("tbody tr").each.with_index do |row|
       row_data = row.css("td").map {|cell| cell.text.strip}
-      parse_row(row_data)
+      puts parse_row(row_data)
+    end
+    "oh no"
   end
 
   def parse_row(row)
@@ -34,6 +36,7 @@ class GatherResultsJob < ApplicationJob
     venue = row[2]
     score = parse_score(row[4])
     {
+      week: @week,
       home_team: teams[:home_team],
       away_team: teams[:away_team],
       kick_off_at: datetime,
@@ -49,8 +52,26 @@ class GatherResultsJob < ApplicationJob
 
   def parse_teams(match)
     teams = match.split(" v ")
-    { home_team: teams[0], away_team: teams[1] }
-    # Todo get team IDs and validate
+    { home_team: team_id(teams[0]), away_team: team_id(teams[1]) }
+  end
+
+  def team_id(name)
+    name = strip_metadata(name)
+
+    team = Team.find_by(name: name)
+    return team.id if team.present?
+    
+    team_alias = TeamAlias.find_by(alias: name)
+    return team_alias.team if team_alias.present?
+
+    puts "TEAM NOT FOUND: #{name}"
+  end
+
+  def strip_metadata(name)
+    index = name =~ / \(RS\)/
+    return name[0..index].strip if index
+
+    name
   end
 
   def parse_score(score)
