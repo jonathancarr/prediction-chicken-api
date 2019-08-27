@@ -10,7 +10,21 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2019_08_27_093024) do
+ActiveRecord::Schema.define(version: 2019_08_27_100113) do
+
+  create_table "fixtures", force: :cascade do |t|
+    t.integer "home_team_id"
+    t.integer "away_team_id"
+    t.integer "tournament_id"
+    t.integer "week"
+    t.datetime "kick_off_at"
+    t.string "venue"
+    t.integer "home_score"
+    t.integer "away_score"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tournament_id"], name: "index_fixtures_on_tournament_id"
+  end
 
   create_table "team_aliases", force: :cascade do |t|
     t.integer "team_id"
