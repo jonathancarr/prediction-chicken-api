@@ -12,10 +12,10 @@ class GatherResultsJob < ApplicationJob
       { year: 2019, url: "http://www.mitre10cup.co.nz/Fixtures" },
     ]
     fixtures = results_urls.collect do |results| 
-      @year ||= results[:year]
-      @week ||= 1
+      @year = results[:year]
+      @week = 1
       scrape_results(results[:url])
-    end.flatten(1)
+    end.flatten()
     update_games(fixtures)
   end
 
